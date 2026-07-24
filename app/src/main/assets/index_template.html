@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Ghost TV</title>
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0c0b14;color:#f0f0f0;font-family:sans-serif;overflow-x:hidden}
+#welcome{position:fixed;inset:0;z-index:9999;background:#0c0b14;display:flex;flex-direction:column;transition:opacity .5s,transform .5s}
+#welcome .bg{flex:1;display:flex;align-items:center;justify-content:center;padding:20px}
+#welcome .bg img{max-width:90%;max-height:85%;object-fit:contain}
+#welcome .footer{padding:16px 20px 30px;display:flex;flex-direction:column;align-items:center;gap:10px}
+#welcome .footer .enter-btn{width:100%;max-width:320px;padding:14px 20px;border:2px solid #ff3b3b;border-radius:12px;background:transparent;color:#ff3b3b;font-size:15px;font-weight:700;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:all .25s;position:relative;overflow:hidden;box-shadow:0 0 20px rgba(255,59,59,0.15)}
+#welcome .footer .enter-btn:hover{background:#ff3b3b;color:#fff;box-shadow:0 0 30px rgba(255,59,59,0.4)}
+#welcome .footer .enter-btn .sp{display:none;width:18px;height:18px;border:2px solid rgba(255,255,255,0.2);border-top-color:#fff;border-radius:50%;animation:s .6s linear infinite;position:absolute;left:50%;top:50%;margin:-9px 0 0 -9px}
+#welcome .footer .enter-btn.loading{color:transparent;pointer-events:none}
+#welcome .footer .enter-btn.loading .sp{display:block}
+#welcome.hidden{opacity:0;transform:scale(1.02);pointer-events:none}
+@keyframes s{to{transform:rotate(360deg)}}
+.main-ui{display:none}
+.main-ui.active{display:block}
+.top-bar{position:sticky;top:0;z-index:100;background:#0c0b14;padding:12px 12px 6px;display:flex;align-items:center;gap:8px}
+.menu-btn{width:30px;height:30px;border:none;background:rgba(255,255,255,0.06);border-radius:6px;color:#fff;font-size:14px;cursor:pointer}
+.top-bar .logo-img{height:22px;flex:1}
+.top-bar span{font-size:9px;color:#555}
+.search-wrap{padding:0 12px 6px;position:sticky;top:48px;z-index:99;background:#0c0b14}
+.search-wrap input{width:100%;padding:7px 10px;border-radius:6px;border:1px solid rgba(255,255,255,0.05);background:#151320;color:#f0f0f0;font-size:11px;outline:none}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;display:none}
+.sidebar{position:fixed;top:0;left:-260px;width:260px;height:100vh;background:#151320;z-index:201;transition:left .3s;overflow-y:auto}
+.sidebar.open{left:0}
+.sidebar .head{padding:12px;border-bottom:1px solid rgba(255,255,255,0.05);display:flex;align-items:center;gap:8px}
+.sidebar .head .menu-logo{height:18px;flex:1}
+.sidebar .head button{background:none;border:none;color:#888;font-size:16px;cursor:pointer}
+.sidebar .item{padding:8px 12px;cursor:pointer;display:flex;align-items:center;gap:8px;border-bottom:1px solid rgba(255,255,255,0.02);font-size:11px;color:#ddd}
+.sidebar .item:hover{background:rgba(255,59,59,0.08)}
+.sidebar .item .count{font-size:9px;color:#555;margin-left:auto}
+.sidebar .sec-title{padding:8px 12px 2px;font-size:9px;color:#555;text-transform:uppercase}
+.section{padding:0 12px 10px}
+.section-header{display:flex;align-items:center;justify-content:space-between;padding:0 2px 6px}
+.section-header .title{font-size:12px;font-weight:700}
+.section-header .count{font-size:8px;color:#555;background:rgba(255,255,255,0.04);padding:2px 6px;border-radius:99px}
+.section-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}
+.card{border-radius:8px;overflow:hidden;background:#1a1829;cursor:pointer;min-height:96px;display:flex;flex-direction:column;position:relative;border:1px solid rgba(255,255,255,0.03);transition:opacity .15s}
+.card:active{opacity:0.6}
+.card .thumb{flex:1;display:flex;align-items:center;justify-content:center;padding:8px 4px 2px;min-height:48px}
+.card .thumb img{width:36px;height:36px;object-fit:contain}
+.card .thumb .nt{font-size:18px;color:#555}
+.card .name{font-size:9px;font-weight:600;text-align:center;padding:0 3px 1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.qb{position:absolute;top:2px;right:2px;background:rgba(0,0,0,0.5);color:#999;padding:0 3px;border-radius:2px;font-size:6px}
+#player{position:fixed;inset:0;z-index:300;display:none;background:#000;flex-direction:column}
+#player video{width:100%;flex:1;object-fit:contain}
+#player .bar{display:flex;align-items:center;padding:5px 10px;background:rgba(0,0,0,0.9);gap:6px}
+#player .bar .name{flex:1;font-size:10px;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#player .bar button{background:rgba(255,255,255,0.07);border:none;color:#fff;padding:3px 8px;border-radius:3px;font-size:9px;cursor:pointer}
+::-webkit-scrollbar{width:0;height:0}
+</style>
+</head>
+<body>
+<div id="welcome">
+  <div class="bg"><img src="file:///android_asset/Bienvenida.png"></div>
+  <div class="footer">
+    <button class="enter-btn" id="enterBtn">INGRESAR<div class="sp"></div></button>
+    <div class="version">v1.0</div>
+  </div>
+</div>
+<div id="dataStore" style="display:none">__B64_DATA__</div>
+<div class="main-ui" id="mainUI">
+  <div class="overlay" id="overlay"></div>
+  <div class="sidebar" id="sidebar">
+    <div class="head"><img src="file:///android_asset/MenuHamburguesa.png" class="menu-logo"><button id="closeSidebarBtn">X</button></div>
+    <div id="menuList"></div>
+  </div>
+  <div class="top-bar">
+    <button class="menu-btn" id="menuBtn">☰</button>
+    <img src="file:///android_asset/MenuHamburguesa.png" class="logo-img">
+    <span id="ct"></span>
+  </div>
+  <div class="search-wrap"><input id="s" placeholder="Buscar..."></div>
+  <div id="content"><div style="padding:30px;text-align:center;color:#555;font-size:12px">Preparando...</div></div>
+</div>
+<div id="player"><video id="vid" controls autoplay playsinline></video><div class="bar"><div class="name" id="pname"></div><button id="closePlayerBtn">X</button></div></div>
+<script>
+var SQ = String.fromCharCode(39);
+var DQ = String.fromCharCode(34);
+var menu = null, def = null, allCh = [];
+
+document.getElementById('enterBtn').addEventListener('click', function(){
+  var btn = this;
+  btn.classList.add('loading');
+  setTimeout(function(){
+    try{
+      var b64 = document.getElementById('dataStore').textContent.trim();
+      var DATA = JSON.parse(atob(b64));
+      menu = DATA.m;
+      def = DATA.d;
+      allCh = [];
+      menu.forEach(function(s){
+        s.c.forEach(function(c){ if(c&&c.n) allCh.push({n:c.n,u:c.u,l:c.l,q:c.q,g:s.t}); });
+      });
+      def.c.forEach(function(c){ if(c&&c.n) allCh.push({n:c.n,u:c.u,l:c.l,q:c.q,g:def.t}); });
+      document.getElementById('ct').textContent = def.c.length + ' canales';
+      var mh = '<div class=sec-title>Menu</div>';
+      for(var i=0;i<menu.length;i++){
+        mh += '<div class=item data-idx=' + i + '><span>' + esc(menu[i].t) + '</span><span class=count>' + menu[i].c.length + '</span></div>';
+      }
+      document.getElementById('menuList').innerHTML = mh;
+      render(def);
+      document.getElementById('welcome').classList.add('hidden');
+      document.getElementById('mainUI').classList.add('active');
+    }catch(e){
+      document.getElementById('content').innerHTML = '<div style=padding:30px;text-align:center;color:#ff4444;font-size:12px>Error: ' + esc(e.message) + '</div>';
+      document.getElementById('welcome').classList.add('hidden');
+      document.getElementById('mainUI').classList.add('active');
+    }
+  }, 100);
+});
+
+function esc(s){ return String(s||'').replace(/[&<>]/g, function(m){
+  if(m=='&') return '&amp;';
+  if(m=='<') return '&lt;';
+  if(m=='>') return '&gt;';
+  return m;
+});}
+
+function render(data){
+  if(!data||!data.c) return;
+  var cards = '', mx = Math.min(data.c.length, 200);
+  for(var i=0;i<mx;i++){
+    var ch = data.c[i]; if(!ch||!ch.u||!ch.n) continue;
+    var q = (ch.q && ch.q !== 'SD') ? '<div class=qb>' + esc(ch.q) + '</div>' : '';
+    var logo;
+    if(ch.l){
+      logo = '<img src="' + esc(ch.l) + '" onerror=' + DQ + 'this.outerHTML=' + SQ + '<div class=nt>TV</div>' + SQ + DQ + '>';
+    } else {
+      logo = '<div class=nt>TV</div>';
+    }
+    cards += '<div class=card data-u=' + SQ + esc(ch.u) + SQ + ' data-n=' + SQ + esc(ch.n) + SQ + '>' + q + '<div class=thumb>' + logo + '</div><div class=name>' + esc(ch.n) + '</div></div>';
+  }
+  document.getElementById('content').innerHTML = '<div class=section><div class=section-header><div class=title>' + esc(data.t) + '</div><div class=count>' + data.c.length + '</div></div><div class=section-grid>' + cards + '</div></div>';
+}
+
+// Event delegation
+document.getElementById('content').addEventListener('click', function(e){
+  var card = e.target.closest('.card');
+  if(card){
+    var u = card.getAttribute('data-u');
+    var n = card.getAttribute('data-n');
+    if(u) play(u, n);
+  }
+});
+
+document.getElementById('menuList').addEventListener('click', function(e){
+  var item = e.target.closest('.item');
+  if(item){
+    var idx = parseInt(item.getAttribute('data-idx'));
+    if(!isNaN(idx) && menu[idx]){
+      render(menu[idx]);
+      document.getElementById('ct').textContent = menu[idx].c.length + ' canales';
+      document.getElementById('s').value = '';
+      closeMenu();
+    }
+  }
+});
+
+document.getElementById('overlay').addEventListener('click', closeMenu);
+document.getElementById('menuBtn').addEventListener('click', openMenu);
+document.getElementById('closeSidebarBtn').addEventListener('click', closeMenu);
+document.getElementById('closePlayerBtn').addEventListener('click', cp);
+
+document.getElementById('s').addEventListener('input', function(){
+  var v = this.value.toLowerCase().trim();
+  if(!v){ render(def); document.getElementById('ct').textContent = def.c.length + ' canales'; return; }
+  try{
+    var res = [];
+    for(var i=0;i<allCh.length && res.length<200; i++){
+      var c = allCh[i];
+      if(c && c.n && c.n.toLowerCase().indexOf(v) !== -1) res.push(c);
+    }
+    if(res.length===0){ document.getElementById('content').innerHTML = '<div style=padding:30px;text-align:center;color:#555;font-size:12px>Sin resultados</div>'; return; }
+    var cards = '';
+    for(var k=0;k<res.length;k++){
+      var c = res[k];
+      var q = (c.q && c.q !== 'SD') ? '<div class=qb>' + esc(c.q) + '</div>' : '';
+      var logo;
+      if(c.l){
+        logo = '<img src="' + esc(c.l) + '" onerror=' + DQ + 'this.outerHTML=' + SQ + '<div class=nt>TV</div>' + SQ + DQ + '>';
+      } else {
+        logo = '<div class=nt>TV</div>';
+      }
+      cards += '<div class=card data-u=' + SQ + esc(c.u) + SQ + ' data-n=' + SQ + esc(c.n) + SQ + '>' + q + '<div class=thumb>' + logo + '</div><div class=name>' + esc(c.n) + '</div></div>';
+    }
+    document.getElementById('content').innerHTML = '<div class=section><div class=section-header><div class=title>Resultados</div><div class=count>' + res.length + '</div></div><div class=section-grid>' + cards + '</div></div>';
+  }catch(e){}
+});
+
+function openMenu(){
+  document.getElementById('overlay').style.display = 'block';
+  document.getElementById('sidebar').classList.add('open');
+}
+function closeMenu(){
+  document.getElementById('overlay').style.display = 'none';
+  document.getElementById('sidebar').classList.remove('open');
+}
+
+function play(u, n){
+  try{
+    document.getElementById('pname').textContent = n || '';
+    document.getElementById('player').style.display = 'flex';
+    var v = document.getElementById('vid');
+    if(v.canPlayType('application/vnd.apple.mpegurl')){
+      v.src = u;
+    } else if(typeof Hls !== 'undefined' && Hls.isSupported()){
+      if(window._h) window._h.destroy();
+      var h = new Hls();
+      window._h = h;
+      h.loadSource(u);
+      h.attachMedia(v);
+    }
+    v.play();
+  }catch(e){}
+}
+
+function cp(){
+  try{
+    if(window._h) window._h.destroy();
+    var v = document.getElementById('vid');
+    v.pause();
+    v.src = '';
+    v.load();
+    document.getElementById('player').style.display = 'none';
+  }catch(e){}
+}
+</script>
+</body>
+</html>
