@@ -29,7 +29,6 @@ class MainActivity : AppCompatActivity() {
         settings.loadWithOverviewMode = true
         settings.useWideViewPort = true
         settings.builtInZoomControls = false
-        settings.setAppCacheEnabled(true)
         settings.cacheMode = android.webkit.WebSettings.LOAD_DEFAULT
 
         webView.webChromeClient = WebChromeClient()
