@@ -1388,26 +1388,27 @@
 
 
 <script>
-// Auto-cargar contenido al abrir la app
+// Auto-cargar canales al abrir la app
 document.addEventListener('DOMContentLoaded', function() {
     setTimeout(function() {
-        // Intentar cargar una lista Xtream si no hay nada guardado
-        if (!localStorage.getItem('m3uData') && !localStorage.getItem('xtreamData')) {
-            // Cargar con la primera cuenta Xtream
-            document.getElementById('inServer') && (document.getElementById('inServer').value = 'http://starlatino.tv:8880');
-            document.getElementById('inUser') && (document.getElementById('inUser').value = 'DSJYcjyHzYw9');
-            document.getElementById('inPass') && (document.getElementById('inPass').value = 'ew7dcQp98vgP');
-            
-            // Agregar canales directos M3U8 como favoritos
-            var canales = [
-                { name: 'Canal 1', url: 'https://media-hls.growcdnssedge.com/b-hls-11/241917078/241917078_480p.m3u8' },
-                { name: 'Canal 2', url: 'https://media-hls.growcdnssedge.com/b-hls-25/65863962/65863962_480p.m3u8' },
-                { name: 'Canal 3', url: 'https://media-hls.growcdnssedge.com/b-hls-13/269545151/269545151_480p.m3u8' },
-                { name: 'Canal 4', url: 'https://media-hls.growcdnssedge.com/b-hls-14/121606218/121606218_480p.m3u8' }
-            ];
-            localStorage.setItem('ghosttv_channels', JSON.stringify(canales));
+        // Llenar formulario Xtream y guardar automaticamente
+        var s = document.getElementById('inServer');
+        var u = document.getElementById('inUser');
+        var p = document.getElementById('inPass');
+        if (s && u && p) {
+            s.value = 'http://starlatino.tv:8880';
+            u.value = 'DSJYcjyHzYw9';
+            p.value = 'ew7dcQp98vgP';
+            // Click guardar
+            var btn = document.getElementById('btnSaveXtream');
+            if (btn) btn.click();
         }
-    }, 1000);
+        // Esperar a que cargue y cerrar modal
+        setTimeout(function() {
+            var modal = document.querySelector('.list-overlay');
+            if (modal) modal.style.display = 'none';
+        }, 2000);
+    }, 500);
 });
 </script>
 
