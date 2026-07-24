@@ -90,9 +90,21 @@ function parseM3U(m3u) {
 async function cargarPlaylist() {
   document.getElementById('loading').style.display = 'flex';
   try {
-    const res = await fetch(M3U_URLS[0].url);
-    const text = await res.text();
-    canales = parseM3U(text);
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', M3U_URLS[0].url, true);
+    xhr.timeout = 15000;
+    
+    var result = await new Promise(function(resolve, reject) {
+      xhr.onload = function() {
+        if (xhr.status >= 200 && xhr.status < 300) resolve(xhr.responseText);
+        else reject('HTTP ' + xhr.status);
+      };
+      xhr.onerror = function() { reject('Error de red'); };
+      xhr.ontimeout = function() { reject('Timeout'); };
+      xhr.send();
+    });
+    
+    canales = parseM3U(result);
     
     if (canales.length === 0) {
       document.getElementById('status').textContent = '⚠️ No se encontraron canales';
@@ -105,7 +117,8 @@ async function cargarPlaylist() {
     mostrarCanales(catActiva);
     document.getElementById('status').textContent = `📡 ${canales.length} canales`;
   } catch(e) {
-    document.getElementById('status').textContent = '❌ Error al cargar lista';
+    document.getElementById('status').textContent = '❌ ' + (e.message || e || 'Error');
+    console.log('Error:', e);
   }
   document.getElementById('loading').style.display = 'none';
 }
