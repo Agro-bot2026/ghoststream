@@ -34,7 +34,7 @@ body{background:#06090d;color:#f0f4f8;font-family:Arial,sans-serif;overflow:hidd
 
 <div id="loading">
   <div class="spinner"></div>
-  <p>Ghost TV - Cargando canales...</p>
+  <p>Ghost TV - Cargando...</p>
 </div>
 
 <div id="player">
@@ -51,21 +51,27 @@ body{background:#06090d;color:#f0f4f8;font-family:Arial,sans-serif;overflow:hidd
 <div class="canales" id="canales"></div>
 
 <script>
-// Canales
 const canales = [
-  {name:"Canal 1 HD",cat:"General",logo:"📺",url:"https://media-hls.growcdnssedge.com/b-hls-11/241917078/241917078_480p.m3u8"},
-  {name:"Canal 2 HD",cat:"General",logo:"📺",url:"https://media-hls.growcdnssedge.com/b-hls-25/65863962/65863962_480p.m3u8"},
-  {name:"Canal 3 HD",cat:"General",logo:"📺",url:"https://media-hls.growcdnssedge.com/b-hls-13/269545151/269545151_480p.m3u8"},
-  {name:"Canal 4 HD",cat:"General",logo:"📺",url:"https://media-hls.growcdnssedge.com/b-hls-14/121606218/121606218_480p.m3u8"}
+  // Canales M3U8 directos
+  {name:"Canal 1 HD",cat:"Directos",logo:"📺",url:"https://media-hls.growcdnssedge.com/b-hls-11/241917078/241917078_480p.m3u8"},
+  {name:"Canal 2 HD",cat:"Directos",logo:"📺",url:"https://media-hls.growcdnssedge.com/b-hls-25/65863962/65863962_480p.m3u8"},
+  {name:"Canal 3 HD",cat:"Directos",logo:"📺",url:"https://media-hls.growcdnssedge.com/b-hls-13/269545151/269545151_480p.m3u8"},
+  {name:"Canal 4 HD",cat:"Directos",logo:"📺",url:"https://media-hls.growcdnssedge.com/b-hls-14/121606218/121606218_480p.m3u8"},
+  
+  // Cuentas Xtream (playlists completas)
+  {name:"Xtream #1",cat:"Xtream",logo:"📡",url:"http://starlatino.tv:8880/get.php?username=DSJYcjyHzYw9&password=ew7dcQp98vgP&type=m3u_plus"},
+  {name:"Xtream #2",cat:"Xtream",logo:"📡",url:"http://starlatino.tv:8880/get.php?username=fabian@9793&password=jz2KxxngVaXU&type=m3u_plus"},
+  {name:"Xtream #3",cat:"Xtream",logo:"📡",url:"http://starlatino.tv:8880/get.php?username=184483&password=M7beC8q7CJyW&type=m3u_plus"},
+  {name:"Xtream #4",cat:"Xtream",logo:"📡",url:"http://starlatino.tv:8880/get.php?username=Ghhpp63@&password=wp85RutmLe7p&type=m3u_plus"},
+  {name:"Xtream #5",cat:"Xtream",logo:"📡",url:"http://starlatino.tv:8880/get.php?username=jXBuzc5TtDkb&password=PUcbPRu6JzTG&type=m3u_plus"},
+  {name:"Xtream #6",cat:"Xtream",logo:"📡",url:"http://starlatino.tv:8880/get.php?username=66345148&password=6WjTVkZJs6NK&type=m3u_plus"},
+  {name:"Xtream #7",cat:"Xtream",logo:"📡",url:"http://starlatino.tv:8880/get.php?username=Gabrielsoto&password=FRWTCCzwgr4T&type=m3u_plus"}
 ];
 
-// Categorias desde Xtream (simuladas)
-const categorias = ["General"];
-
-let catActiva = "General";
+let catActiva = "Directos";
 
 function mostrarCanales(filtroCat) {
-  catActiva = filtroCat || "General";
+  catActiva = filtroCat || "Directos";
   const div = document.getElementById("canales");
   const filtrados = canales.filter(c => !filtroCat || c.cat === filtroCat);
   div.innerHTML = filtrados.map(c => `
@@ -98,12 +104,14 @@ function reproducir(url, name) {
   const video = document.getElementById("videoPlayer");
   player.style.display = "block";
   
-  if (video.canPlayType('application/vnd.apple.mpegurl')) {
-    video.src = url;
-  } else if (Hls.isSupported()) {
-    const hls = new Hls();
-    hls.loadSource(url);
-    hls.attachMedia(video);
+  if (url.includes('m3u_plus') || url.includes('.m3u8')) {
+    if (video.canPlayType('application/vnd.apple.mpegurl')) {
+      video.src = url;
+    } else if (typeof Hls !== 'undefined' && Hls.isSupported()) {
+      const hls = new Hls();
+      hls.loadSource(url);
+      hls.attachMedia(video);
+    }
   }
   video.play();
 }
@@ -115,9 +123,8 @@ function cerrarPlayer() {
   document.getElementById("player").style.display = "none";
 }
 
-// Iniciar
 mostrarCategorias();
-mostrarCanales("General");
+mostrarCanales("Directos");
 document.getElementById("loading").style.display = "none";
 </script>
 </body>
