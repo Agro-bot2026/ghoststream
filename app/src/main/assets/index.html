@@ -7,34 +7,36 @@
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{background:#06090d;color:#f0f4f8;font-family:Arial,sans-serif;overflow:hidden}
+body{background:#06090d;color:#f0f4f8;font-family:Arial,sans-serif;overflow:hidden;height:100vh}
 #player{position:fixed;inset:0;z-index:100;display:none;background:#000}
 #player video{width:100%;height:100%}
-#player .close{position:absolute;top:10px;right:10px;z-index:101;background:rgba(255,0,0,0.8);color:#fff;border:none;border-radius:50%;width:40px;height:40px;font-size:20px;cursor:pointer}
-.nav{display:flex;align-items:center;padding:10px 15px;background:linear-gradient(180deg,#0d1117,transparent);position:sticky;top:0;z-index:10}
-.nav h1{font-size:22px;color:#e63946;flex:1}
-.nav span{font-size:11px;color:#8898aa}
-.categorias{display:flex;gap:8px;padding:10px 15px;overflow-x:auto}
-.categoria{padding:6px 16px;border-radius:99px;border:1px solid rgba(255,255,255,0.1);font-size:13px;cursor:pointer;white-space:nowrap;background:transparent;color:#8898aa}
+#player .close{position:absolute;top:5px;right:5px;z-index:101;background:rgba(255,0,0,0.9);color:#fff;border:none;border-radius:50%;width:36px;height:36px;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.nav{display:flex;align-items:center;padding:8px 12px;background:linear-gradient(180deg,#0d1117 60%,transparent);position:sticky;top:0;z-index:10}
+.nav h1{font-size:20px;color:#e63946;flex:1;letter-spacing:2px}
+.nav span{font-size:10px;color:#8898aa}
+.categorias{display:flex;gap:6px;padding:8px 12px;overflow-x:auto;scrollbar-width:none}
+.categoria{padding:5px 14px;border-radius:99px;border:1px solid rgba(255,255,255,0.1);font-size:12px;cursor:pointer;white-space:nowrap;background:transparent;color:#8898aa;flex-shrink:0;transition:all .15s}
 .categoria.activa{background:#e63946;color:#fff;border-color:#e63946}
-.canales{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;padding:10px 15px;padding-bottom:80px;overflow-y:auto;height:calc(100vh - 110px)}
-.canal{border-radius:10px;overflow:hidden;background:#111820;border:1px solid rgba(255,255,255,0.05);cursor:pointer;transition:all .2s}
+.canales{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;padding:8px 12px;padding-bottom:80px;overflow-y:auto;height:calc(100vh - 95px)}
+.canal{border-radius:8px;overflow:hidden;background:#111820;border:1px solid rgba(255,255,255,0.05);cursor:pointer;transition:all .2s}
 .canal:hover{transform:scale(1.03);border-color:#e63946}
-.canal .thumb{aspect-ratio:16/9;background:linear-gradient(135deg,#1a1a2e,#16213e);display:flex;align-items:center;justify-content:center;font-size:40px}
-.canal .info{padding:8px 10px}
-.canal .info .titulo{font-size:13px;font-weight:600}
-.canal .info .subtitulo{font-size:11px;color:#8898aa;margin-top:2px}
+.canal .thumb{aspect-ratio:16/9;background:linear-gradient(135deg,#1a1a2e,#16213e);display:flex;align-items:center;justify-content:center;font-size:32px;padding:5px}
+.canal .thumb img{width:100%;height:100%;object-fit:contain}
+.canal .info{padding:6px 8px}
+.canal .info .titulo{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.canal .info .subtitulo{font-size:10px;color:#8898aa;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #loading{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#06090d;z-index:999;flex-direction:column;gap:15px}
-#loading .spinner{width:40px;height:40px;border:3px solid rgba(230,57,70,0.2);border-top-color:#e63946;border-radius:50%;animation:spin .8s linear infinite}
+#loading .spinner{width:36px;height:36px;border:3px solid rgba(230,57,70,0.2);border-top-color:#e63946;border-radius:50%;animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
-#loading p{color:#8898aa;font-size:14px}
+#loading p{font-size:13px;color:#8898aa}
+#status{position:fixed;bottom:10px;left:50%;transform:translateX(-50%);background:rgba(230,57,70,0.15);border:1px solid rgba(230,57,70,0.3);border-radius:99px;padding:5px 15px;font-size:11px;color:#e63946;z-index:50;white-space:nowrap}
 </style>
 </head>
 <body>
 
 <div id="loading">
   <div class="spinner"></div>
-  <p>Ghost TV - Cargando...</p>
+  <p>Ghost TV - Cargando canales...</p>
 </div>
 
 <div id="player">
@@ -46,86 +48,123 @@ body{background:#06090d;color:#f0f4f8;font-family:Arial,sans-serif;overflow:hidd
   <h1>GHOST TV</h1>
   <span>@CharlyTricks</span>
 </div>
-
 <div class="categorias" id="categorias"></div>
 <div class="canales" id="canales"></div>
+<div id="status"></div>
 
 <script>
-const canales = [
-  // Canales M3U8 directos
-  {name:"Canal 1 HD",cat:"Directos",logo:"📺",url:"https://media-hls.growcdnssedge.com/b-hls-11/241917078/241917078_480p.m3u8"},
-  {name:"Canal 2 HD",cat:"Directos",logo:"📺",url:"https://media-hls.growcdnssedge.com/b-hls-25/65863962/65863962_480p.m3u8"},
-  {name:"Canal 3 HD",cat:"Directos",logo:"📺",url:"https://media-hls.growcdnssedge.com/b-hls-13/269545151/269545151_480p.m3u8"},
-  {name:"Canal 4 HD",cat:"Directos",logo:"📺",url:"https://media-hls.growcdnssedge.com/b-hls-14/121606218/121606218_480p.m3u8"},
-  
-  // Cuentas Xtream (playlists completas)
-  {name:"Xtream #1",cat:"Xtream",logo:"📡",url:"http://starlatino.tv:8880/get.php?username=DSJYcjyHzYw9&password=ew7dcQp98vgP&type=m3u_plus"},
-  {name:"Xtream #2",cat:"Xtream",logo:"📡",url:"http://starlatino.tv:8880/get.php?username=fabian@9793&password=jz2KxxngVaXU&type=m3u_plus"},
-  {name:"Xtream #3",cat:"Xtream",logo:"📡",url:"http://starlatino.tv:8880/get.php?username=184483&password=M7beC8q7CJyW&type=m3u_plus"},
-  {name:"Xtream #4",cat:"Xtream",logo:"📡",url:"http://starlatino.tv:8880/get.php?username=Ghhpp63@&password=wp85RutmLe7p&type=m3u_plus"},
-  {name:"Xtream #5",cat:"Xtream",logo:"📡",url:"http://starlatino.tv:8880/get.php?username=jXBuzc5TtDkb&password=PUcbPRu6JzTG&type=m3u_plus"},
-  {name:"Xtream #6",cat:"Xtream",logo:"📡",url:"http://starlatino.tv:8880/get.php?username=66345148&password=6WjTVkZJs6NK&type=m3u_plus"},
-  {name:"Xtream #7",cat:"Xtream",logo:"📡",url:"http://starlatino.tv:8880/get.php?username=Gabrielsoto&password=FRWTCCzwgr4T&type=m3u_plus"}
+const M3U_URLS = [
+  {name:"TDT Channels",url:"https://www.tdtchannels.com/lists/tv.m3u8"}
 ];
 
-let catActiva = "Directos";
+let canales = [];
+let catActiva = "";
+
+function parseM3U(m3u) {
+  const lines = m3u.split('\n');
+  const result = [];
+  let current = {};
+  for (const line of lines) {
+    const t = line.trim();
+    if (t.startsWith('#EXTINF:')) {
+      const nameMatch = t.match(/,([^,]+)$/);
+      const groupMatch = t.match(/group-title="([^"]+)"/);
+      const logoMatch = t.match(/tvg-logo="([^"]+)"/);
+      const idMatch = t.match(/tvg-id="([^"]+)"/);
+      current = {
+        name: nameMatch ? nameMatch[1].trim() : 'Sin nombre',
+        group: groupMatch ? groupMatch[1] : 'General',
+        logo: logoMatch ? logoMatch[1] : '',
+        id: idMatch ? idMatch[1] : '',
+        url: ''
+      };
+    } else if (t.startsWith('http') && current.name) {
+      current.url = t;
+      result.push({...current});
+      current = {};
+    }
+  }
+  return result;
+}
+
+async function cargarPlaylist() {
+  document.getElementById('loading').style.display = 'flex';
+  try {
+    const res = await fetch(M3U_URLS[0].url);
+    const text = await res.text();
+    canales = parseM3U(text);
+    
+    if (canales.length === 0) {
+      document.getElementById('status').textContent = '⚠️ No se encontraron canales';
+      return;
+    }
+    
+    const cats = [...new Set(canales.map(c => c.group))];
+    catActiva = cats[0] || '';
+    mostrarCategorias(cats);
+    mostrarCanales(catActiva);
+    document.getElementById('status').textContent = `📡 ${canales.length} canales`;
+  } catch(e) {
+    document.getElementById('status').textContent = '❌ Error al cargar lista';
+  }
+  document.getElementById('loading').style.display = 'none';
+}
 
 function mostrarCanales(filtroCat) {
-  catActiva = filtroCat || "Directos";
-  const div = document.getElementById("canales");
-  const filtrados = canales.filter(c => !filtroCat || c.cat === filtroCat);
+  catActiva = filtroCat || catActiva;
+  const div = document.getElementById('canales');
+  const filtrados = canales.filter(c => c.group === catActiva);
   div.innerHTML = filtrados.map(c => `
-    <div class="canal" onclick="reproducir('${c.url.replace(/'/g,"\\'")}','${c.name}')">
-      <div class="thumb">${c.logo}</div>
+    <div class="canal" onclick="reproducir('${c.url.replace(/'/g,"\\'")}','${c.name.replace(/'/g,"\\'")}')">
+      <div class="thumb">${c.logo ? `<img src="${c.logo}" alt="" onerror="this.outerHTML='📺'">` : '📺'}</div>
       <div class="info">
         <div class="titulo">${c.name}</div>
-        <div class="subtitulo">${c.cat}</div>
+        <div class="subtitulo">${c.group}</div>
       </div>
     </div>
   `).join("");
 }
 
-function mostrarCategorias() {
-  const cats = [...new Set(canales.map(c => c.cat))];
-  const div = document.getElementById("categorias");
+function mostrarCategorias(cats) {
+  const div = document.getElementById('categorias');
   div.innerHTML = cats.map(c => `
-    <button class="categoria ${c === catActiva ? 'activa' : ''}" onclick="cambiarCategoria('${c}')">${c}</button>
+    <button class="categoria ${c === catActiva ? 'activa' : ''}" onclick="cambiarCategoria('${c.replace(/'/g,"\\'")}')">${c}</button>
   `).join("");
 }
 
 function cambiarCategoria(cat) {
   catActiva = cat;
-  mostrarCategorias();
+  mostrarCategorias([...new Set(canales.map(c => c.group))]);
   mostrarCanales(cat);
 }
 
 function reproducir(url, name) {
-  const player = document.getElementById("player");
-  const video = document.getElementById("videoPlayer");
-  player.style.display = "block";
+  const player = document.getElementById('player');
+  const video = document.getElementById('videoPlayer');
+  document.getElementById('status').textContent = `▶️ ${name}`;
+  player.style.display = 'block';
   
-  if (url.includes('m3u_plus') || url.includes('.m3u8')) {
-    if (video.canPlayType('application/vnd.apple.mpegurl')) {
-      video.src = url;
-    } else if (typeof Hls !== 'undefined' && Hls.isSupported()) {
-      const hls = new Hls();
-      hls.loadSource(url);
-      hls.attachMedia(video);
-    }
+  if (video.canPlayType('application/vnd.apple.mpegurl')) {
+    video.src = url;
+  } else if (typeof Hls !== 'undefined' && Hls.isSupported()) {
+    const hls = new Hls();
+    hls.loadSource(url);
+    hls.attachMedia(video);
+    hls.on(Hls.Events.ERROR, (e, d) => {
+      if (d.fatal) { document.getElementById('status').textContent = '❌ Error al reproducir'; }
+    });
   }
-  video.play();
+  video.play().catch(() => {});
 }
 
 function cerrarPlayer() {
-  const video = document.getElementById("videoPlayer");
-  video.pause();
-  video.src = "";
-  document.getElementById("player").style.display = "none";
+  const video = document.getElementById('videoPlayer');
+  video.pause(); video.src = ''; video.load();
+  document.getElementById('player').style.display = 'none';
+  document.getElementById('status').textContent = `📡 ${canales.length} canales`;
 }
 
-mostrarCategorias();
-mostrarCanales("Directos");
-document.getElementById("loading").style.display = "none";
+cargarPlaylist();
 </script>
 </body>
 </html>
