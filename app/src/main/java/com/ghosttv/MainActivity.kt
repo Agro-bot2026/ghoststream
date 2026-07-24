@@ -1,10 +1,11 @@
-package com.streamingflashtv
+package com.ghosttv
 
 import android.os.Bundle
 import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.view.KeyEvent
+import android.view.WindowManager
 import androidx.appcompat.app.AppCompatActivity
 
 class MainActivity : AppCompatActivity() {
@@ -13,6 +14,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         supportActionBar?.hide()
+        window.addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN)
 
         webView = WebView(this)
         setContentView(webView)
@@ -27,15 +29,15 @@ class MainActivity : AppCompatActivity() {
         settings.loadWithOverviewMode = true
         settings.useWideViewPort = true
         settings.builtInZoomControls = false
+        settings.setAppCacheEnabled(true)
+        settings.cacheMode = android.webkit.WebSettings.LOAD_DEFAULT
 
         webView.webChromeClient = WebChromeClient()
         webView.webViewClient = WebViewClient()
 
-        // Cargar el HTML desde assets
         webView.loadUrl("file:///android_asset/index.html")
     }
 
-    // Boton atras para TV
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
         if (keyCode == KeyEvent.KEYCODE_BACK) {
             if (webView.canGoBack()) {

@@ -3,10 +3,10 @@ plugins {
     id("org.jetbrains.kotlin.android")
 }
 android {
-    namespace = "com.streamingflashtv"
+    namespace = "com.ghosttv"
     compileSdk = 34
     defaultConfig {
-        applicationId = "com.streamingflashtv"
+        applicationId = "com.ghosttv"
         minSdk = 21
         targetSdk = 34
         versionCode = 1
