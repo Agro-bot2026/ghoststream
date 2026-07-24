@@ -11,17 +11,23 @@ jobs:
         with: { distribution: temurin, java-version: '17' }
       - uses: android-actions/setup-android@v3
 
-      - name: Install SDK
+      - name: Install SDK & Build tools
         run: yes | sdkmanager "platforms;android-34" "build-tools;34.0.0"
 
-      - name: Setup Gradle
+      - name: Build APK with Gradle
         run: |
-          curl -sL https://services.gradle.org/distributions/gradle-8.5-bin.zip -o /tmp/gradle.zip
-          unzip -q /tmp/gradle.zip -d /tmp/gradle
-          /tmp/gradle/gradle-8.5/bin/gradle wrapper --gradle-version 8.5
-
-      - name: Build APK
-        run: chmod +x gradlew && ./gradlew assembleDebug
+          # Usar sdkmanager para instalar Gradle o usar directamente
+          export ANDROID_HOME=/usr/local/lib/android/sdk
+          export ANDROID_SDK_ROOT=/usr/local/lib/android/sdk
+          export JAVA_HOME=$JAVA_HOME_17_X64
+          
+          # Instalar Gradle via sdkman
+          curl -sL "https://get.sdkman.io" | bash 2>/dev/null
+          source "$HOME/.sdkman/bin/sdkman-init.sh" 2>/dev/null
+          sdk install gradle 8.5 2>/dev/null
+          
+          # Build
+          gradle assembleDebug --no-daemon --stacktrace
 
       - uses: actions/upload-artifact@v4
         with:
