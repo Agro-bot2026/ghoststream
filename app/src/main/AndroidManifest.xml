@@ -6,7 +6,6 @@
     <application
         android:allowBackup="true"
         android:label="StreamingFlashTV"
-        android:icon="@mipmap/ic_launcher"
         android:usesCleartextTraffic="true"
         android:theme="@android:style/Theme.NoTitleBar.Fullscreen">
         <activity android:name=".MainActivity" android:exported="true">
