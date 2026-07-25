@@ -81,29 +81,28 @@ body{background:#0a0a0f;color:#e5e5e5;font-family:-apple-system,BlinkMacSystemFo
 <div id="player"><video id="vid" controls autoplay playsinline></video></div>
 
 <script>
-var KEY = '824cbbc0033f5f3d8400d3a80c4d8a08';
-var B = 'https://api.themoviedb.org/3';
-var I = 'https://image.tmdb.org/t/p/w500';
+var BASEQ = {
+  movie:'collection:(feature_films) AND mediatype:(movies)',
+  tv:'collection:(prelinger) AND mediatype:(movies)'
+};
 
-var type = 'movie', cat = '', pg = 1, loadOk = false, items = [];
+var type = 'movie', cat = '', pg = 1, items = [];
 
 var genres = {
-  movie: '28:Accion,12:Aventura,16:Animacion,35:Comedia,80:Crimen,99:Documental,18:Drama,10751:Familiar,14:Fantasia,36:Historia,27:Terror,10402:Musica,9648:Misterio,10749:Romance,878:CFiccion,53:Thriller,10752:Belica,37:Western',
-  tv: '10759:Accion,16:Animacion,35:Comedia,80:Crimen,99:Documental,18:Drama,10762:Infantil,10764:Reality,10765:CFiccion,10766:Telenovela,10767:Noticias,10768:Belica'
+  movie: 'horror:Terror,comedy:Comedia,science fiction:CFiccion,drama:Drama,western:Western,adventure:Aventura,film noir:Noir,thriller:Thriller,animation:Animacion',
+  tv: 'educational:Educativo,industry:Industria,history:Historia,advertising:Publicidad'
 };
 
 function switchType(t){
   type = t; cat = ''; pg = 1; items = [];
   document.getElementById('grid').innerHTML = '';
   document.getElementById('s').value = '';
-  renderTabs();
-  renderCats();
-  load();
+  renderTabs(); renderCats(); load();
 }
 
 function renderTabs(){
   var h = '<button class=tab'+(type=='movie'?' active':'')+' onclick="switchType(\'movie\')">Peliculas</button>';
-  h += '<button class=tab'+(type=='tv'?' active':'')+' onclick="switchType(\'tv\')">Series</button>';
+  h += '<button class=tab'+(type=='tv'?' active':'')+' onclick="switchType(\'tv\')">Documentales</button>';
   document.getElementById('tabs').innerHTML = h;
 }
 
@@ -117,45 +116,38 @@ function renderCats(){
   document.getElementById('cats').innerHTML = h;
 }
 
-function selCat(c){cat=c;pg=1;items=[];document.getElementById('grid').innerHTML='';load();var el=document.getElementById('cats').children;for(var i=0;i<el.length;i++){el[i].className='cat'+(i==0&&c==''||el[i].textContent==c?' active':'')}}
+function selCat(c){cat=c;pg=1;items=[];document.getElementById('grid').innerHTML='';load();var el=document.getElementById('cats').children;for(var i=0;i<el.length;i++){el[i].className='cat'+((i==0&&c=='')||el[i].getAttribute('data-c')==c?' active':'')}}
 
 function load(){
-  if(loadOk)return;
-  var url = B+'/discover/'+type+'?api_key='+KEY+'&language=es-ES&page='+pg+'&sort_by=popularity.desc';
-  if(cat) url += '&with_genres='+cat;
-  var x = new XMLHttpRequest();
-  x.open('GET', url, true);
-  x.onload = function(){
-    if(x.status!=200){setTimeout(load,1000);return;}
-    var d = JSON.parse(x.responseText);
-    var r = d.results||[];
-    for(var i=0;i<r.length;i++){
-      var m = r[i];
-      items.push(m);
-      addCard(m);
-    }
-    pg++;loadOk=false;
-    document.getElementById('grid')._loading=false;
+  var g=document.getElementById('grid');
+  if(g._loading)return; g._loading=true;
+  var q=BASEQ[type];
+  if(cat) q+=' AND subject:('+cat+')';
+  var url='https://archive.org/advancedsearch.php?q='+encodeURIComponent(q)+'&fl[]=identifier&fl[]=title&fl[]=year&sort[]=downloads+desc&rows=30&page='+pg+'&output=json';
+  var x=new XMLHttpRequest(); x.open('GET',url,true);
+  x.onload=function(){
+    if(x.status!=200){g._loading=false;return;}
+    var d=JSON.parse(x.responseText);
+    var r=(d.response&&d.response.docs)||[];
+    for(var i=0;i<r.length;i++){items.push(r[i]);addCard(r[i]);}
+    pg++; g._loading=false;
   };
-  x.onerror = function(){setTimeout(load,1000);};
+  x.onerror=function(){g._loading=false;};
   x.send();
 }
 
 function addCard(m){
-  var title = m.title||m.name||'?';
-  var year = (m.release_date||m.first_air_date||'').substring(0,4);
-  var poster = m.poster_path ? I+m.poster_path : '';
-  var vote = m.vote_average ? '&#9733; '+m.vote_average.toFixed(1) : '';
-  var el = document.createElement('div');
-  el.className = 'card';
-  el.setAttribute('data-id', m.id);
-  el.setAttribute('data-type', type);
-  el.onclick = function(){openDet(this.getAttribute('data-id'), this.getAttribute('data-type'));};
-  el.innerHTML = '<div class=poster>'+(poster?'<img src="'+poster+'" loading=lazy onerror="this.outerHTML=\'<div class=np>&#127916;</div>\'">':'<div class=np>&#127916;</div>')+(vote?'<div class=vote>'+vote+'</div>':'')+'</div><div class=info><div class=title>'+title+'</div><div class=year>'+year+'</div></div>';
+  var id=m.identifier;
+  var title=m.title||id;
+  var year=m.year||'';
+  var thumb='https://archive.org/services/img/'+id;
+  var el=document.createElement('div');
+  el.className='card';
+  el.onclick=function(){openDet(id);};
+  el.innerHTML='<div class=poster><img src="'+thumb+'" loading=lazy onerror="this.outerHTML=\'<div class=np>&#127916;</div>\'"></div><div class=info><div class=title>'+title+'</div><div class=year>'+year+'</div></div>';
   document.getElementById('grid').appendChild(el);
 }
 
-// Infinite scroll
 document.getElementById('grid').onscroll = function(){
   var g = document.getElementById('grid');
   if(g.scrollTop + g.clientHeight >= g.scrollHeight - 300) load();
@@ -164,40 +156,50 @@ document.getElementById('grid').onscroll = function(){
 function doSearch(v){
   v=v.trim();
   if(!v){pg=1;items=[];document.getElementById('grid').innerHTML='';load();return;}
-  var x = new XMLHttpRequest();
-  x.open('GET', B+'/search/'+type+'?api_key='+KEY+'&language=es-ES&query='+encodeURIComponent(v), true);
-  x.onload = function(){
+  var q=BASEQ[type]+' AND ('+v+')';
+  var url='https://archive.org/advancedsearch.php?q='+encodeURIComponent(q)+'&fl[]=identifier&fl[]=title&fl[]=year&rows=30&page=1&output=json';
+  var x=new XMLHttpRequest(); x.open('GET',url,true);
+  x.onload=function(){
     if(x.status!=200)return;
-    var d = JSON.parse(x.responseText);
-    var g = document.getElementById('grid');g.innerHTML='';
-    (d.results||[]).forEach(function(m){addCard(m);});
+    var d=JSON.parse(x.responseText);
+    var g=document.getElementById('grid'); g.innerHTML='';
+    ((d.response&&d.response.docs)||[]).forEach(function(m){addCard(m);});
   };
   x.send();
 }
 
-function openDet(id, t){
+function openDet(id){
   document.getElementById('detail').style.display='block';
   document.getElementById('hero').innerHTML = '<div style=padding:20px;text-align:center;color:#445;font-size:12px>Cargando...</div>';
   document.getElementById('srcs').innerHTML = '';
   var x = new XMLHttpRequest();
-  x.open('GET', B+'/'+t+'/'+id+'?api_key='+KEY+'&language=es-ES', true);
+  x.open('GET','https://archive.org/metadata/'+id,true);
   x.onload = function(){
     if(x.status!=200)return;
     var d = JSON.parse(x.responseText);
-    var t2 = d.title||d.name||'?';
-    var y = (d.release_date||d.first_air_date||'').substring(0,4);
-    var ov = d.overview||'Sin sinopsis';
-    var po = d.poster_path ? I+d.poster_path : '';
-    var bg = d.backdrop_path ? 'url(https://image.tmdb.org/t/p/w1280'+d.backdrop_path+')' : '';
-    var vt = d.vote_average ? '&#9733; '+d.vote_average.toFixed(1) : '';
-    var gn = (d.genres||[]).map(function(g){return g.name;}).join(', ');
-    
-    document.getElementById('hero').innerHTML = '<div style="position:absolute;inset:0;background:'+bg+';background-size:cover;background-position:center"></div><div class=bg></div><div class=ct><div class=poster>'+(po?'<img src="'+po+'">':'<div style=height:135px;display:flex;align-items:center;justify-content:center;background:#13131f;border-radius:6px;font-size:24px>&#127916;</div>')+'</div><div class=meta><h2>'+t2+'</h2><div class=sub><span>'+y+'</span><span>'+vt+'</span><span>'+gn+'</span></div><div class=ov>'+ov+'</div></div></div>';
-    
-    var sh = '<h3>Fuentes</h3>';
-    sh += '<div class=src onclick="playVid(\'https://vidsrc.to/embed/'+t+'/'+id+'\')"><span class=nm>&#127916; VidSrc</span><span class=ql>HD</span></div>';
-    sh += '<div class=src onclick="playVid(\'https://embed.su/embed/'+t+'/'+id+'\')"><span class=nm>&#127916; Embed.su</span><span class=ql>HD</span></div>';
-    sh += '<div style=padding:14px;text-align:center;color:#445;font-size:11px>Mas fuentes proximamente...</div>';
+    var md = d.metadata||{};
+    var t2 = md.title||id;
+    var y = md.year||'';
+    var ov = md.description||'Sin sinopsis';
+    if(ov.join) ov=ov.join(' ');
+    ov = (''+ov).replace(/<[^>]+>/g,'').substring(0,400);
+    var po = 'https://archive.org/services/img/'+id;
+    var files = d.files||[];
+    var vid='';
+    var exts=['.mp4','.m4v','.ogv','.webm'];
+    for(var e=0;e<exts.length&&!vid;e++){
+      for(var i=0;i<files.length;i++){
+        var nm=(files[i].name||'');
+        if(nm.toLowerCase().indexOf(exts[e])>-1){vid='https://archive.org/download/'+id+'/'+encodeURIComponent(nm);break;}
+      }
+    }
+    document.getElementById('hero').innerHTML = '<div style="position:absolute;inset:0;background:url('+po+');background-size:cover;background-position:center;opacity:.35"></div><div class=bg></div><div class=ct><div class=poster><img src="'+po+'"></div><div class=meta><h2>'+t2+'</h2><div class=sub><span>'+y+'</span></div><div class=ov>'+ov+'</div></div></div>';
+    var sh='<h3>Fuente</h3>';
+    if(vid){
+      sh+='<div class=src onclick="playVid(\''+vid+'\')"><span class=nm>&#127916; Reproducir</span><span class=ql>Internet Archive</span></div>';
+    } else {
+      sh+='<div style=padding:14px;text-align:center;color:#445;font-size:11px>Sin archivo reproducible directo</div>';
+    }
     document.getElementById('srcs').innerHTML = sh;
   };
   x.send();
