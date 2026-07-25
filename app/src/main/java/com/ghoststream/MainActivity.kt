@@ -1,4 +1,4 @@
-package com.ghosttv
+package com.ghoststream
 
 import android.os.Bundle
 import android.webkit.WebChromeClient
