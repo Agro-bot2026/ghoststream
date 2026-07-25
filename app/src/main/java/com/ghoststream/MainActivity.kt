@@ -39,10 +39,10 @@ class MainActivity : AppCompatActivity() {
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
         if (keyCode == KeyEvent.KEYCODE_BACK) {
-            if (webView.canGoBack()) {
-                webView.goBack()
-                return true
+            webView.evaluateJavascript("androidBack()") { result ->
+                if (result != "true") finish()
             }
+            return true
         }
         return super.onKeyDown(keyCode, event)
     }
