@@ -61,7 +61,11 @@ body{background:#0a0a0f;color:#e5e5e5;font-family:-apple-system,BlinkMacSystemFo
 </head>
 <body>
 <div id="loading"><div class="sp"></div><p>Ghost Stream</p></div>
-<div class="header"><img src="file:///android_asset/GhostStream.png" style="height:32px;border-radius:6px"><h1>STREAM</h1><span id="ct"></span></div>
+<div class="header">
+  <img src="file:///android_asset/GhostStream.png" style="height:28px;width:28px;border-radius:6px;object-fit:cover" onerror="this.style.display='none'">
+  <h1>GHOST STREAM</h1>
+  <span id="ct"></span>
+</div>
 <div class="search-wrap"><input id="s" placeholder="Buscar peliculas, series..." oninput="search(this.value)"></div>
 <div class="tabs" id="tabs"></div>
 <div class="cats" id="cats"></div>
@@ -189,6 +193,8 @@ function cp(){
 }
 
 document.getElementById('loading').style.display='none';
+// Force loading to hide after 1.5s even if something fails
+setTimeout(function(){document.getElementById('loading').style.display='none';},1500);
 </script>
 </body>
 </html>
